@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "./ui/button";
 
 type SortConfig = {
-  key: keyof ArbitragePath | "lastUpdated";
+  key: keyof Omit<ArbitragePath, 'lastUpdated'>;
   direction: "ascending" | "descending";
 };
 
@@ -98,15 +98,6 @@ export function ArbitrageTable({ data }: { data: ArbitragePath[] }) {
                   {getSortIcon("profit")}
                 </Button>
               </TableHead>
-              <TableHead className="w-48 text-right">
-                <Button
-                  variant="ghost"
-                  onClick={() => requestSort("lastUpdated")}
-                >
-                  Last Updated
-                  {getSortIcon("lastUpdated")}
-                </Button>
-              </TableHead>
             </TableRow>
           </TableHeader>
         </Table>
@@ -119,7 +110,7 @@ export function ArbitrageTable({ data }: { data: ArbitragePath[] }) {
                     <TableCell className="w-12">
                       <AccordionTrigger className="p-0 w-full justify-center [&>svg]:ml-2" />
                     </TableCell>
-                    <TableCell className="max-w-xs">
+                    <TableCell>
                       <div className="flex flex-wrap items-center gap-2 font-medium">
                         {path.path[0]}
                         <ArrowRight className="h-4 w-4 text-muted-foreground" />
@@ -145,9 +136,6 @@ export function ArbitrageTable({ data }: { data: ArbitragePath[] }) {
                         )}
                         {formatProfit(path.profit)}
                       </div>
-                    </TableCell>
-                    <TableCell className="w-48 text-right text-muted-foreground">
-                      {formatDistanceToNow(path.lastUpdated, { addSuffix: true })}
                     </TableCell>
                   </TableRow>
                 </TableBody>
