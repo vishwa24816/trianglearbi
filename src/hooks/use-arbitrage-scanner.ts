@@ -11,14 +11,29 @@ const initialPaths: Omit<ArbitragePath, "legs" | "profit" | "lastUpdated">[] = [
     pairs: ["BTC/USDT", "BTC/USDC", "USDC/USDT"],
   },
   {
+    id: "1-rev",
+    path: ["USDT", "USDC", "BTC", "USDT"],
+    pairs: ["USDC/USDT", "BTC/USDC", "BTC/USDT"],
+  },
+  {
     id: "2",
     path: ["USDT", "ETH", "USDC", "USDT"],
     pairs: ["ETH/USDT", "ETH/USDC", "USDC/USDT"],
   },
   {
+    id: "2-rev",
+    path: ["USDT", "USDC", "ETH", "USDT"],
+    pairs: ["USDC/USDT", "ETH/USDC", "ETH/USDT"],
+  },
+  {
     id: "3",
     path: ["USDT", "USDC", "FDUSD", "USDT"],
     pairs: ["USDC/USDT", "FDUSD/USDC", "FDUSD/USDT"],
+  },
+  {
+    id: "3-rev",
+    path: ["USDT", "FDUSD", "USDC", "USDT"],
+    pairs: ["FDUSD/USDT", "FDUSD/USDC", "USDC/USDT"],
   },
 ];
 
@@ -51,6 +66,12 @@ export function useArbitrageScanner() {
       const amountB = (finalAmount / l1.ask) * (1 - TRADING_FEE); // USDT -> BTC
       const amountC = (amountB * l2.bid) * (1 - TRADING_FEE);     // BTC -> USDC
       finalAmount = (amountC * l3.bid) * (1 - TRADING_FEE);       // USDC -> USDT
+    } 
+    // USDT -> USDC -> BTC -> USDT
+    else if (p1 === "USDT" && p2 === "USDC" && p3 === "BTC") {
+      const amountB = (finalAmount * l1.bid) * (1 - TRADING_FEE);     // USDT -> USDC
+      const amountC = (amountB / l2.bid) * (1 - TRADING_FEE);       // USDC -> BTC (reverse of BTC/USDC)
+      finalAmount = (amountC * l3.ask) * (1 - TRADING_FEE);         // BTC -> USDT (reverse of BTC/USDT)
     }
     // USDT -> ETH -> USDC -> USDT
     else if (p1 === "USDT" && p2 === "ETH" && p3 === "USDC") {
@@ -58,13 +79,24 @@ export function useArbitrageScanner() {
       const amountC = (amountB * l2.bid) * (1 - TRADING_FEE);     // ETH -> USDC
       finalAmount = (amountC * l3.bid) * (1 - TRADING_FEE);       // USDC -> USDT
     }
+    // USDT -> USDC -> ETH -> USDT
+    else if (p1 === "USDT" && p2 === "USDC" && p3 === "ETH") {
+        const amountB = (finalAmount * l1.bid) * (1 - TRADING_FEE);   // USDT -> USDC
+        const amountC = (amountB / l2.bid) * (1 - TRADING_FEE);     // USDC -> ETH (reverse of ETH/USDC)
+        finalAmount = (amountC * l3.ask) * (1 - TRADING_FEE);       // ETH -> USDT (reverse of ETH/USDT)
+    }
      // USDT -> USDC -> FDUSD -> USDT
     else if (p1 === 'USDT' && p2 === 'USDC' && p3 === 'FDUSD') {
         const amountB = (finalAmount * l1.bid) * (1 - TRADING_FEE); // USDT -> USDC (Pair is USDC/USDT)
         const amountC = (amountB / l2.ask) * (1 - TRADING_FEE);     // USDC -> FDUSD
         finalAmount = (amountC * l3.bid) * (1 - TRADING_FEE);       // FDUSD -> USDT
     }
-
+    // USDT -> FDUSD -> USDC -> USDT
+    else if (p1 === 'USDT' && p2 === 'FDUSD' && p3 === 'USDC') {
+        const amountB = (finalAmount / l1.ask) * (1 - TRADING_FEE); // USDT -> FDUSD
+        const amountC = (amountB * l2.bid) * (1 - TRADING_FEE);     // FDUSD -> USDC
+        finalAmount = (amountC / l3.bid) * (1 - TRADING_FEE);       // USDC -> USDT (reverse of USDC/USDT)
+    }
 
     return ((finalAmount - 1000) / 1000) * 100;
   }, []);
