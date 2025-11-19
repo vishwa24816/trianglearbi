@@ -47,7 +47,7 @@ const initialPrices: { [key: string]: { bid: number; ask: number } } = {
   "FDUSD/USDT": { bid: 0.999, ask: 1.0 },
 };
 
-const TRADING_FEE = 0.001; // 0.1%
+const TRADING_FEE = 0.003; // 0.3%
 
 export function useArbitrageScanner() {
   const [paths, setPaths] = useState<ArbitragePath[]>([]);
