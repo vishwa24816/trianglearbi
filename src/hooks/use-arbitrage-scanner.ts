@@ -5,39 +5,45 @@ import { realTimeArbitrageAlerts } from "@/ai/flows/real-time-arbitrage-alerts";
 import { useState, useEffect, useCallback } from "react";
 
 const initialPaths: Omit<ArbitragePath, "legs" | "profit" | "lastUpdated">[] = [
-  {
-    id: "1",
-    path: ["USDT", "BTC", "USDC", "USDT"],
-    pairs: ["BTC/USDT", "BTC/USDC", "USDC/USDT"],
-  },
-  {
-    id: "1-rev",
-    path: ["USDT", "USDC", "BTC", "USDT"],
-    pairs: ["USDC/USDT", "BTC/USDC", "BTC/USDT"],
-  },
-  {
-    id: "2",
-    path: ["USDT", "ETH", "USDC", "USDT"],
-    pairs: ["ETH/USDT", "ETH/USDC", "USDC/USDT"],
-  },
-  {
-    id: "2-rev",
-    path: ["USDT", "USDC", "ETH", "USDT"],
-    pairs: ["USDC/USDT", "ETH/USDC", "ETH/USDT"],
-  },
-  {
-    id: "3",
-    path: ["USDT", "USDC", "FDUSD", "USDT"],
-    pairs: ["USDC/USDT", "FDUSD/USDC", "FDUSD/USDT"],
-  },
-  {
-    id: "3-rev",
-    path: ["USDT", "FDUSD", "USDC", "USDT"],
-    pairs: ["FDUSD/USDT", "FDUSD/USDC", "USDC/USDT"],
-  },
+  // Existing
+  { id: "1", path: ["USDT", "BTC", "USDC", "USDT"], pairs: ["BTC/USDT", "BTC/USDC", "USDC/USDT"] },
+  { id: "1-rev", path: ["USDT", "USDC", "BTC", "USDT"], pairs: ["USDC/USDT", "BTC/USDC", "BTC/USDT"] },
+  { id: "2", path: ["USDT", "ETH", "USDC", "USDT"], pairs: ["ETH/USDT", "ETH/USDC", "USDC/USDT"] },
+  { id: "2-rev", path: ["USDT", "USDC", "ETH", "USDT"], pairs: ["USDC/USDT", "ETH/USDC", "ETH/USDT"] },
+  { id: "3", path: ["USDT", "USDC", "FDUSD", "USDT"], pairs: ["USDC/USDT", "FDUSD/USDC", "FDUSD/USDT"] },
+  { id: "3-rev", path: ["USDT", "FDUSD", "USDC", "USDT"], pairs: ["FDUSD/USDT", "FDUSD/USDC", "USDC/USDT"] },
+
+  // New from user list
+  { id: "4", path: ["USDT", "BNB", "FDUSD", "USDT"], pairs: ["BNB/USDT", "BNB/FDUSD", "FDUSD/USDT"] },
+  { id: "4-rev", path: ["USDT", "FDUSD", "BNB", "USDT"], pairs: ["FDUSD/USDT", "BNB/FDUSD", "BNB/USDT"] },
+  { id: "5", path: ["USDT", "USDC", "TUSD", "USDT"], pairs: ["USDC/USDT", "TUSD/USDC", "TUSD/USDT"] },
+  { id: "5-rev", path: ["USDT", "TUSD", "USDC", "USDT"], pairs: ["TUSD/USDT", "TUSD/USDC", "USDC/USDT"] },
+  { id: "6", path: ["USDT", "FDUSD", "TUSD", "USDT"], pairs: ["FDUSD/USDT", "TUSD/FDUSD", "TUSD/USDT"] },
+  { id: "6-rev", path: ["USDT", "TUSD", "FDUSD", "USDT"], pairs: ["TUSD/USDT", "TUSD/FDUSD", "FDUSD/USDT"] },
+  { id: "7", path: ["USDT", "BTC", "FDUSD", "USDT"], pairs: ["BTC/USDT", "BTC/FDUSD", "FDUSD/USDT"] },
+  { id: "7-rev", path: ["USDT", "FDUSD", "BTC", "USDT"], pairs: ["FDUSD/USDT", "BTC/FDUSD", "BTC/USDT"] },
+  { id: "8", path: ["USDT", "BTC", "TUSD", "USDT"], pairs: ["BTC/USDT", "BTC/TUSD", "TUSD/USDT"] },
+  { id: "8-rev", path: ["USDT", "TUSD", "BTC", "USDT"], pairs: ["TUSD/USDT", "BTC/TUSD", "BTC/USDT"] },
+  { id: "9", path: ["USDT", "BTC", "ETH", "USDT"], pairs: ["BTC/USDT", "ETH/BTC", "ETH/USDT"] },
+  { id: "9-rev", path: ["USDT", "ETH", "BTC", "USDT"], pairs: ["ETH/USDT", "ETH/BTC", "BTC/USDT"] },
+  { id: "10", path: ["USDT", "ETH", "FDUSD", "USDT"], pairs: ["ETH/USDT", "ETH/FDUSD", "FDUSD/USDT"] },
+  { id: "10-rev", path: ["USDT", "FDUSD", "ETH", "USDT"], pairs: ["FDUSD/USDT", "ETH/FDUSD", "ETH/USDT"] },
+  { id: "11", path: ["USDT", "ETH", "BNB", "USDT"], pairs: ["ETH/USDT", "BNB/ETH", "BNB/USDT"] },
+  { id: "11-rev", path: ["USDT", "BNB", "ETH", "USDT"], pairs: ["BNB/USDT", "BNB/ETH", "ETH/USDT"] },
+  { id: "12", path: ["USDT", "BNB", "USDC", "USDT"], pairs: ["BNB/USDT", "BNB/USDC", "USDC/USDT"] },
+  { id: "12-rev", path: ["USDT", "USDC", "BNB", "USDT"], pairs: ["USDC/USDT", "BNB/USDC", "BNB/USDT"] },
+  { id: "13", path: ["USDT", "BNB", "BTC", "USDT"], pairs: ["BNB/USDT", "BNB/BTC", "BTC/USDT"] },
+  { id: "13-rev", path: ["USDT", "BTC", "BNB", "USDT"], pairs: ["BTC/USDT", "BNB/BTC", "BNB/USDT"] },
+  { id: "14", path: ["USDT", "SOL", "USDC", "USDT"], pairs: ["SOL/USDT", "SOL/USDC", "USDC/USDT"] },
+  { id: "14-rev", path: ["USDT", "USDC", "SOL", "USDT"], pairs: ["USDC/USDT", "SOL/USDC", "SOL/USDT"] },
+  { id: "15", path: ["USDT", "XRP", "USDC", "USDT"], pairs: ["XRP/USDT", "XRP/USDC", "USDC/USDT"] },
+  { id: "15-rev", path: ["USDT", "USDC", "XRP", "USDT"], pairs: ["USDC/USDT", "XRP/USDC", "XRP/USDT"] },
+  { id: "16", path: ["USDT", "DOGE", "USDC", "USDT"], pairs: ["DOGE/USDT", "DOGE/USDC", "USDC/USDT"] },
+  { id: "16-rev", path: ["USDT", "USDC", "DOGE", "USDT"], pairs: ["USDC/USDT", "DOGE/USDC", "DOGE/USDT"] },
 ];
 
 const initialPrices: { [key: string]: { bid: number; ask: number } } = {
+  // Existing
   "BTC/USDT": { bid: 68000, ask: 68001 },
   "BTC/USDC": { bid: 68005, ask: 68006 },
   "USDC/USDT": { bid: 0.999, ask: 1.001 },
@@ -45,9 +51,58 @@ const initialPrices: { [key: string]: { bid: number; ask: number } } = {
   "ETH/USDC": { bid: 3502, ask: 3503 },
   "FDUSD/USDC": { bid: 1.0, ask: 1.001 },
   "FDUSD/USDT": { bid: 0.999, ask: 1.0 },
+
+  // New
+  "BNB/USDT": { bid: 580, ask: 580.5 },
+  "BNB/FDUSD": { bid: 579.5, ask: 580 },
+  "TUSD/USDT": { bid: 0.998, ask: 0.999 },
+  "TUSD/USDC": { bid: 0.9985, ask: 0.9995 },
+  "TUSD/FDUSD": { bid: 0.998, ask: 0.999 },
+  "BTC/FDUSD": { bid: 68010, ask: 68012 },
+  "BTC/TUSD": { bid: 68015, ask: 68017 },
+  "ETH/BTC": { bid: 0.051, ask: 0.0511 },
+  "ETH/FDUSD": { bid: 3505, ask: 3506 },
+  "BNB/ETH": { bid: 0.165, ask: 0.166 },
+  "BNB/USDC": { bid: 581, ask: 581.5 },
+  "BNB/BTC": { bid: 0.0085, ask: 0.00855 },
+  "SOL/USDT": { bid: 150, ask: 150.1 },
+  "SOL/USDC": { bid: 150.2, ask: 150.3 },
+  "XRP/USDT": { bid: 0.52, ask: 0.521 },
+  "XRP/USDC": { bid: 0.522, ask: 0.523 },
+  "DOGE/USDT": { bid: 0.15, ask: 0.151 },
+  "DOGE/USDC": { bid: 0.152, ask: 0.153 },
 };
 
 const TRADING_FEE = 0.003; // 0.3%
+
+// Generic function to calculate profit for a triangular path
+const calculateArbitrage = (startAmount: number, legs: ArbitragePath['legs']): number => {
+    let currentAmount = startAmount;
+
+    // Leg 1
+    if (legs[0].symbol.startsWith(legs[0].symbol.split('/')[1])) { // e.g., USDT in BTC/USDT -> a/b
+        currentAmount = (currentAmount / legs[0].ask) * (1 - TRADING_FEE);
+    } else { // e.g., USDC in USDC/USDT -> b/a
+        currentAmount = (currentAmount * legs[0].bid) * (1 - TRADING_FEE);
+    }
+
+    // Leg 2
+    if (legs[1].symbol.startsWith(legs[1].symbol.split('/')[1])) { // a/b
+        currentAmount = (currentAmount / legs[1].ask) * (1 - TRADING_FEE);
+    } else {
+        currentAmount = (currentAmount * legs[1].bid) * (1 - TRADING_FEE);
+    }
+    
+    // Leg 3
+     if (legs[2].symbol.startsWith(legs[2].symbol.split('/')[1])) { // a/b
+        currentAmount = (currentAmount / legs[2].ask) * (1 - TRADING_FEE);
+    } else {
+        currentAmount = (currentAmount * legs[2].bid) * (1 - TRADING_FEE);
+    }
+
+    return currentAmount;
+};
+
 
 export function useArbitrageScanner() {
   const [paths, setPaths] = useState<ArbitragePath[]>([]);
@@ -57,48 +112,54 @@ export function useArbitrageScanner() {
   );
 
   const calculateProfit = useCallback((path: ArbitragePath): number => {
-    const [p1, p2, p3] = path.path;
-    const [l1, l2, l3] = path.legs;
-    let finalAmount = 1000; // Start with 1000 of the initial currency
-
-    // USDT -> BTC -> USDC -> USDT
-    if (p1 === "USDT" && p2 === "BTC" && p3 === "USDC") {
-      const amountB = (finalAmount / l1.ask) * (1 - TRADING_FEE); // USDT -> BTC
-      const amountC = (amountB * l2.bid) * (1 - TRADING_FEE);     // BTC -> USDC
-      finalAmount = (amountC * l3.bid) * (1 - TRADING_FEE);       // USDC -> USDT
-    } 
-    // USDT -> USDC -> BTC -> USDT
-    else if (p1 === "USDT" && p2 === "USDC" && p3 === "BTC") {
-      const amountB = (finalAmount * l1.bid) * (1 - TRADING_FEE);     // USDT -> USDC
-      const amountC = (amountB / l2.bid) * (1 - TRADING_FEE);       // USDC -> BTC (reverse of BTC/USDC)
-      finalAmount = (amountC * l3.ask) * (1 - TRADING_FEE);         // BTC -> USDT (reverse of BTC/USDT)
-    }
-    // USDT -> ETH -> USDC -> USDT
-    else if (p1 === "USDT" && p2 === "ETH" && p3 === "USDC") {
-      const amountB = (finalAmount / l1.ask) * (1 - TRADING_FEE); // USDT -> ETH
-      const amountC = (amountB * l2.bid) * (1 - TRADING_FEE);     // ETH -> USDC
-      finalAmount = (amountC * l3.bid) * (1 - TRADING_FEE);       // USDC -> USDT
-    }
-    // USDT -> USDC -> ETH -> USDT
-    else if (p1 === "USDT" && p2 === "USDC" && p3 === "ETH") {
-        const amountB = (finalAmount * l1.bid) * (1 - TRADING_FEE);   // USDT -> USDC
-        const amountC = (amountB / l2.bid) * (1 - TRADING_FEE);     // USDC -> ETH (reverse of ETH/USDC)
-        finalAmount = (amountC * l3.ask) * (1 - TRADING_FEE);       // ETH -> USDT (reverse of ETH/USDT)
-    }
-     // USDT -> USDC -> FDUSD -> USDT
-    else if (p1 === 'USDT' && p2 === 'USDC' && p3 === 'FDUSD') {
-        const amountB = (finalAmount * l1.bid) * (1 - TRADING_FEE); // USDT -> USDC (Pair is USDC/USDT)
-        const amountC = (amountB / l2.ask) * (1 - TRADING_FEE);     // USDC -> FDUSD
-        finalAmount = (amountC * l3.bid) * (1 - TRADING_FEE);       // FDUSD -> USDT
-    }
-    // USDT -> FDUSD -> USDC -> USDT
-    else if (p1 === 'USDT' && p2 === 'FDUSD' && p3 === 'USDC') {
-        const amountB = (finalAmount / l1.ask) * (1 - TRADING_FEE); // USDT -> FDUSD
-        const amountC = (amountB * l2.bid) * (1 - TRADING_FEE);     // FDUSD -> USDC
-        finalAmount = (amountC / l3.bid) * (1 - TRADING_FEE);       // USDC -> USDT (reverse of USDC/USDT)
+    const startAmount = 1000;
+    let finalAmount = 0;
+  
+    // Determine the base and quote for each pair to calculate correctly.
+    const getTrade = (amount: number, pair: {symbol: string, bid: number, ask: number}, from: string, to: string) => {
+        const [base, quote] = pair.symbol.split('/');
+        if (from === quote && to === base) { // Buy base with quote
+            return (amount / pair.ask) * (1 - TRADING_FEE);
+        }
+        if (from === base && to === quote) { // Sell base for quote
+            return (amount * pair.bid) * (1 - TRADING_FEE);
+        }
+        // This case handles pairs like USDC/USDT where you might "buy" USDT with USDC.
+        // It's a reverse of the typical base/quote logic.
+        if (from === base && to === quote) {
+             return (amount / pair.bid) * (1 - TRADING_FEE);
+        }
+       return 0;
     }
 
-    return ((finalAmount - 1000) / 1000) * 100;
+    let currentAmount = startAmount;
+    let currentAsset = path.path[0];
+    
+    for (let i = 0; i < path.legs.length; i++) {
+        const leg = path.legs[i];
+        const nextAsset = path.path[i+1];
+        const [base, quote] = leg.symbol.split('/');
+
+        if (currentAsset === quote && nextAsset === base) { // Buy base with quote: e.g. USDT -> BTC with BTC/USDT
+            currentAmount = (currentAmount / leg.ask) * (1 - TRADING_FEE);
+        } else if (currentAsset === base && nextAsset === quote) { // Sell base for quote: e.g. BTC -> USDT with BTC/USDT
+            currentAmount = (currentAmount * leg.bid) * (1 - TRADING_FEE);
+        } else if (currentAsset === base && nextAsset === path.path[0]) { // Final leg back to start asset
+             currentAmount = (currentAmount * leg.bid) * (1 - TRADING_FEE);
+        } else {
+            // This handles cases where the path doesn't perfectly match the pair order,
+            // e.g., path is A->B but pair is B/A. We need to invert the price.
+             if (currentAsset === base) {
+                 currentAmount = (currentAmount * leg.bid) * (1 - TRADING_FEE);
+             } else {
+                 currentAmount = (currentAmount / leg.ask) * (1 - TRADING_FEE);
+             }
+        }
+       currentAsset = nextAsset;
+    }
+
+    finalAmount = currentAmount;
+    return ((finalAmount - startAmount) / startAmount) * 100;
   }, []);
 
   useEffect(() => {
@@ -108,13 +169,15 @@ export function useArbitrageScanner() {
     const interval = setInterval(async () => {
       // Simulate price fluctuations
       for (const symbol in prices) {
-        const price = prices[symbol];
-        const volatility = 0.0005; // 0.05%
-        const change = (Math.random() - 0.5) * price.ask * volatility;
-        price.bid += change;
-        price.ask += change;
-        if (price.bid >= price.ask) {
-          price.ask = price.bid + price.ask * 0.0001;
+        if (Object.prototype.hasOwnProperty.call(prices, symbol)) {
+            const price = prices[symbol];
+            const volatility = 0.0005; // 0.05%
+            const change = (Math.random() - 0.5) * price.ask * volatility;
+            price.bid += change;
+            price.ask += change;
+            if (price.bid >= price.ask) {
+              price.ask = price.bid + price.ask * 0.0001;
+            }
         }
       }
       
@@ -122,7 +185,7 @@ export function useArbitrageScanner() {
       profitablePathIteration++;
       if (profitablePathIteration > 5 && profitablePathIteration < 10) {
         // Make USDT->BTC->USDC->USDT profitable
-        prices["BTC/USDC"].bid = prices["BTC/USDT"].ask * 1.005;
+        prices["BTC/USDC"].bid = prices["BTC/USDT"].ask * 1.008; // Increased from 1.005 to overcome 0.3% fees
       } else {
         prices["BTC/USDC"].bid = initialPrices["BTC/USDC"].bid;
       }
@@ -131,7 +194,7 @@ export function useArbitrageScanner() {
       const updatedPaths = initialPaths.map((p) => {
         const legs = p.pairs.map((pairSymbol) => ({
           symbol: pairSymbol,
-          ...prices[pairSymbol],
+          ...(prices[pairSymbol] || { bid: 0, ask: 0 }),
         }));
         const newPath = { ...p, legs, profit: 0, lastUpdated: Date.now() };
         newPath.profit = calculateProfit(newPath);
