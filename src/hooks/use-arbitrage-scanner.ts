@@ -4,6 +4,8 @@ import type { ArbitragePath } from "@/lib/types";
 import { realTimeArbitrageAlerts } from "@/ai/flows/real-time-arbitrage-alerts";
 import { useState, useEffect, useCallback } from "react";
 
+const STABLECOINS = ["USDT", "USDC", "FDUSD", "TUSD"];
+
 const initialPaths: Omit<ArbitragePath, "legs" | "profit" | "lastUpdated">[] = [
   // Existing
   { id: "1", path: ["USDT", "BTC", "USDC", "USDT"], pairs: ["BTC/USDT", "BTC/USDC", "USDC/USDT"] },
@@ -46,18 +48,18 @@ const initialPrices: { [key: string]: { bid: number; ask: number } } = {
   // Existing
   "BTC/USDT": { bid: 68000, ask: 68001 },
   "BTC/USDC": { bid: 68005, ask: 68006 },
-  "USDC/USDT": { bid: 0.999, ask: 1.001 },
+  "USDC/USDT": { bid: 1.0, ask: 1.0 },
   "ETH/USDT": { bid: 3500, ask: 3501 },
   "ETH/USDC": { bid: 3502, ask: 3503 },
-  "FDUSD/USDC": { bid: 1.0, ask: 1.001 },
-  "FDUSD/USDT": { bid: 0.999, ask: 1.0 },
+  "FDUSD/USDC": { bid: 1.0, ask: 1.0 },
+  "FDUSD/USDT": { bid: 1.0, ask: 1.0 },
 
   // New
   "BNB/USDT": { bid: 580, ask: 580.5 },
   "BNB/FDUSD": { bid: 579.5, ask: 580 },
-  "TUSD/USDT": { bid: 0.998, ask: 0.999 },
-  "TUSD/USDC": { bid: 0.9985, ask: 0.9995 },
-  "TUSD/FDUSD": { bid: 0.998, ask: 0.999 },
+  "TUSD/USDT": { bid: 1.0, ask: 1.0 },
+  "TUSD/USDC": { bid: 1.0, ask: 1.0 },
+  "TUSD/FDUSD": { bid: 1.0, ask: 1.0 },
   "BTC/FDUSD": { bid: 68010, ask: 68012 },
   "BTC/TUSD": { bid: 68015, ask: 68017 },
   "ETH/BTC": { bid: 0.051, ask: 0.0511 },
@@ -82,25 +84,7 @@ export function useArbitrageScanner(tradingFee: number) {
 
   const calculateProfit = useCallback((path: ArbitragePath, fee: number): number => {
     const startAmount = 1000;
-    let finalAmount = 0;
-  
-    // Determine the base and quote for each pair to calculate correctly.
-    const getTrade = (amount: number, pair: {symbol: string, bid: number, ask: number}, from: string, to: string) => {
-        const [base, quote] = pair.symbol.split('/');
-        if (from === quote && to === base) { // Buy base with quote
-            return (amount / pair.ask) * (1 - fee);
-        }
-        if (from === base && to === quote) { // Sell base for quote
-            return (amount * pair.bid) * (1 - fee);
-        }
-        // This case handles pairs like USDC/USDT where you might "buy" USDT with USDC.
-        // It's a reverse of the typical base/quote logic.
-        if (from === base && to === quote) {
-             return (amount / pair.bid) * (1 - fee);
-        }
-       return 0;
-    }
-
+    
     let currentAmount = startAmount;
     let currentAsset = path.path[0];
     
@@ -109,26 +93,30 @@ export function useArbitrageScanner(tradingFee: number) {
         const nextAsset = path.path[i+1];
         const [base, quote] = leg.symbol.split('/');
 
-        if (currentAsset === quote && nextAsset === base) { // Buy base with quote: e.g. USDT -> BTC with BTC/USDT
-            currentAmount = (currentAmount / leg.ask) * (1 - fee);
-        } else if (currentAsset === base && nextAsset === quote) { // Sell base for quote: e.g. BTC -> USDT with BTC/USDT
-            currentAmount = (currentAmount * leg.bid) * (1 - fee);
-        } else if (currentAsset === base && nextAsset === path.path[0]) { // Final leg back to start asset
-             currentAmount = (currentAmount * leg.bid) * (1 - fee);
+        let rate: number;
+
+        if (STABLECOINS.includes(base) && STABLECOINS.includes(quote)) {
+            rate = 1.0;
+            currentAmount = currentAmount * rate * (1 - fee);
         } else {
-            // This handles cases where the path doesn't perfectly match the pair order,
-            // e.g., path is A->B but pair is B/A. We need to invert the price.
-             if (currentAsset === base) {
-                 currentAmount = (currentAmount * leg.bid) * (1 - fee);
-             } else {
-                 currentAmount = (currentAmount / leg.ask) * (1 - fee);
-             }
+            if (currentAsset === quote && nextAsset === base) { // Buy base with quote: e.g. USDT -> BTC with BTC/USDT
+                currentAmount = (currentAmount / leg.ask) * (1 - fee);
+            } else if (currentAsset === base && nextAsset === quote) { // Sell base for quote: e.g. BTC -> USDT with BTC/USDT
+                currentAmount = (currentAmount * leg.bid) * (1 - fee);
+            } else {
+                // This handles cases where the path doesn't perfectly match the pair order,
+                // e.g., path is A->B but pair is B/A. We need to invert the price.
+                 if (currentAsset === base) { // e.g. path BTC -> ETH, pair ETH/BTC. Should be a sell.
+                     currentAmount = (currentAmount * leg.bid) * (1 - fee);
+                 } else { // e.g. path ETH -> BTC, pair ETH/BTC. Should be a buy.
+                     currentAmount = (currentAmount / leg.ask) * (1 - fee);
+                 }
+            }
         }
        currentAsset = nextAsset;
     }
 
-    finalAmount = currentAmount;
-    return ((finalAmount - startAmount) / startAmount) * 100;
+    return ((currentAmount - startAmount) / startAmount) * 100;
   }, []);
 
   useEffect(() => {
@@ -138,6 +126,11 @@ export function useArbitrageScanner(tradingFee: number) {
     const interval = setInterval(async () => {
       // Simulate price fluctuations
       for (const symbol in prices) {
+        const [base, quote] = symbol.split('/');
+        if (STABLECOINS.includes(base) && STABLECOINS.includes(quote)) {
+          continue; // Don't fluctuate stable-stable pairs
+        }
+        
         if (Object.prototype.hasOwnProperty.call(prices, symbol)) {
             const price = prices[symbol];
             const volatility = 0.0005; // 0.05%

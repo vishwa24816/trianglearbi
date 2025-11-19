@@ -39,6 +39,8 @@ function formatProfit(profit: number) {
   return `${sign}${profit.toFixed(4)}%`;
 }
 
+const STABLECOINS = ["USDT", "USDC", "FDUSD", "TUSD"];
+
 export function ArbitrageTable({ data }: { data: ArbitragePath[] }) {
   const [sortConfig, setSortConfig] = React.useState<SortConfig>({
     key: "profit",
@@ -156,7 +158,10 @@ export function ArbitrageTable({ data }: { data: ArbitragePath[] }) {
               <div className="bg-muted/30 p-4">
                 <h4 className="mb-2 font-semibold">Trade Legs</h4>
                 <ul className="space-y-2">
-                  {path.legs.map((leg, index) => (
+                  {path.legs.map((leg, index) => {
+                    const [base, quote] = leg.symbol.split("/");
+                    const isStablecoinPair = STABLECOINS.includes(base) && STABLECOINS.includes(quote);
+                    return (
                     <li
                       key={index}
                       className="flex items-center justify-between rounded-md bg-background/50 p-3"
@@ -165,15 +170,22 @@ export function ArbitrageTable({ data }: { data: ArbitragePath[] }) {
                         <Badge variant="secondary">{index + 1}</Badge>
                         <span className="font-semibold">{leg.symbol}</span>
                       </div>
-                      <div className="font-mono text-sm">
-                        <span className="text-muted-foreground">Bid: </span>
-                        <span>{leg.bid.toFixed(4)}</span>
-                        <span className="mx-2 text-muted-foreground">|</span>
-                        <span className="text-muted-foreground">Ask: </span>
-                        <span>{leg.ask.toFixed(4)}</span>
-                      </div>
+                      {isStablecoinPair ? (
+                         <div className="font-mono text-sm">
+                           <span className="text-muted-foreground">Rate: </span>
+                           <span>1.0000</span>
+                         </div>
+                      ) : (
+                        <div className="font-mono text-sm">
+                          <span className="text-muted-foreground">Bid: </span>
+                          <span>{leg.bid.toFixed(4)}</span>
+                          <span className="mx-2 text-muted-foreground">|</span>
+                          <span className="text-muted-foreground">Ask: </span>
+                          <span>{leg.ask.toFixed(4)}</span>
+                        </div>
+                      )}
                     </li>
-                  ))}
+                  )})}
                 </ul>
               </div>
             </AccordionContent>
