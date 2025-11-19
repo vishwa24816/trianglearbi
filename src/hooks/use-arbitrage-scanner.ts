@@ -48,18 +48,18 @@ const initialPrices: { [key: string]: { bid: number; ask: number } } = {
   // Existing
   "BTC/USDT": { bid: 68000, ask: 68001 },
   "BTC/USDC": { bid: 68005, ask: 68006 },
-  "USDC/USDT": { bid: 1.0, ask: 1.0 },
+  "USDC/USDT": { bid: 0.9998, ask: 1.0002 },
   "ETH/USDT": { bid: 3500, ask: 3501 },
   "ETH/USDC": { bid: 3502, ask: 3503 },
-  "FDUSD/USDC": { bid: 1.0, ask: 1.0 },
-  "FDUSD/USDT": { bid: 1.0, ask: 1.0 },
+  "FDUSD/USDC": { bid: 0.9997, ask: 1.0001 },
+  "FDUSD/USDT": { bid: 0.9999, ask: 1.0003 },
 
   // New
   "BNB/USDT": { bid: 580, ask: 580.5 },
   "BNB/FDUSD": { bid: 579.5, ask: 580 },
-  "TUSD/USDT": { bid: 1.0, ask: 1.0 },
-  "TUSD/USDC": { bid: 1.0, ask: 1.0 },
-  "TUSD/FDUSD": { bid: 1.0, ask: 1.0 },
+  "TUSD/USDT": { bid: 0.9995, ask: 1.0005 },
+  "TUSD/USDC": { bid: 0.9996, ask: 1.0004 },
+  "TUSD/FDUSD": { bid: 0.9998, ask: 1.0002 },
   "BTC/FDUSD": { bid: 68010, ask: 68012 },
   "BTC/TUSD": { bid: 68015, ask: 68017 },
   "ETH/BTC": { bid: 0.051, ask: 0.0511 },
@@ -91,27 +91,19 @@ export function useArbitrageScanner(tradingFee: number) {
     for (let i = 0; i < path.legs.length; i++) {
         const leg = path.legs[i];
         const nextAsset = path.path[i+1];
-        const [base, quote] = leg.symbol.split('/');
-
-        let rate: number;
-
-        if (STABLECOINS.includes(base) && STABLECOINS.includes(quote)) {
-            rate = 1.0;
-            currentAmount = currentAmount * rate * (1 - fee);
+        
+        if (currentAsset === leg.symbol.split('/')[1] && nextAsset === leg.symbol.split('/')[0]) { // Buy base with quote: e.g. USDT -> BTC with BTC/USDT
+            currentAmount = (currentAmount / leg.ask) * (1 - fee);
+        } else if (currentAsset === leg.symbol.split('/')[0] && nextAsset === leg.symbol.split('/')[1]) { // Sell base for quote: e.g. BTC -> USDT with BTC/USDT
+            currentAmount = (currentAmount * leg.bid) * (1 - fee);
         } else {
-            if (currentAsset === quote && nextAsset === base) { // Buy base with quote: e.g. USDT -> BTC with BTC/USDT
-                currentAmount = (currentAmount / leg.ask) * (1 - fee);
-            } else if (currentAsset === base && nextAsset === quote) { // Sell base for quote: e.g. BTC -> USDT with BTC/USDT
-                currentAmount = (currentAmount * leg.bid) * (1 - fee);
-            } else {
-                // This handles cases where the path doesn't perfectly match the pair order,
-                // e.g., path is A->B but pair is B/A. We need to invert the price.
-                 if (currentAsset === base) { // e.g. path BTC -> ETH, pair ETH/BTC. Should be a sell.
-                     currentAmount = (currentAmount * leg.bid) * (1 - fee);
-                 } else { // e.g. path ETH -> BTC, pair ETH/BTC. Should be a buy.
-                     currentAmount = (currentAmount / leg.ask) * (1 - fee);
-                 }
-            }
+            // This handles cases where the path doesn't perfectly match the pair order,
+            // e.g., path is A->B but pair is B/A. We need to invert the price.
+             if (currentAsset === leg.symbol.split('/')[0]) { // e.g. path BTC -> ETH, pair ETH/BTC. Should be a sell.
+                 currentAmount = (currentAmount * leg.bid) * (1 - fee);
+             } else { // e.g. path ETH -> BTC, pair ETH/BTC. Should be a buy.
+                 currentAmount = (currentAmount / leg.ask) * (1 - fee);
+             }
         }
        currentAsset = nextAsset;
     }
@@ -126,11 +118,6 @@ export function useArbitrageScanner(tradingFee: number) {
     const interval = setInterval(async () => {
       // Simulate price fluctuations
       for (const symbol in prices) {
-        const [base, quote] = symbol.split('/');
-        if (STABLECOINS.includes(base) && STABLECOINS.includes(quote)) {
-          continue; // Don't fluctuate stable-stable pairs
-        }
-        
         if (Object.prototype.hasOwnProperty.call(prices, symbol)) {
             const price = prices[symbol];
             const volatility = 0.0005; // 0.05%
