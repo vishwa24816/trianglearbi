@@ -1,15 +1,31 @@
 "use client";
 
-import { useEffect } from "react";
-import { Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Zap, Percent } from "lucide-react";
 
 import { ArbitrageTable } from "@/components/arbitrage-table";
 import { useArbitrageScanner } from "@/hooks/use-arbitrage-scanner";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "./ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "./ui/label";
+
+const tradingFeeOptions = [
+  { label: "0.3%", value: 0.003 },
+  { label: "0.2%", value: 0.002 },
+  { label: "0.1%", value: 0.001 },
+  { label: "0.08%", value: 0.0008 },
+];
 
 export function ArbitrageDashboard() {
-  const { paths, isLoading, alert } = useArbitrageScanner();
+  const [tradingFee, setTradingFee] = useState(tradingFeeOptions[0].value);
+  const { paths, isLoading, alert } = useArbitrageScanner(tradingFee);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -32,6 +48,30 @@ export function ArbitrageDashboard() {
           Real-time Binance triangular arbitrage scanner
         </p>
       </header>
+      
+      <div className="mb-4 flex justify-end">
+        <div className="grid w-full max-w-[180px] items-center gap-1.5">
+          <Label htmlFor="trading-fee" className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Percent className="h-3 w-3" />
+            Trading Fee
+          </Label>
+          <Select
+            value={String(tradingFee)}
+            onValueChange={(value) => setTradingFee(Number(value))}
+          >
+            <SelectTrigger id="trading-fee" className="h-9">
+              <SelectValue placeholder="Select trading fee" />
+            </SelectTrigger>
+            <SelectContent>
+              {tradingFeeOptions.map((option) => (
+                <SelectItem key={option.value} value={String(option.value)}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="space-y-4">

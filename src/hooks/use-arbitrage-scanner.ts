@@ -73,45 +73,14 @@ const initialPrices: { [key: string]: { bid: number; ask: number } } = {
   "DOGE/USDC": { bid: 0.152, ask: 0.153 },
 };
 
-const TRADING_FEE = 0.003; // 0.3%
-
-// Generic function to calculate profit for a triangular path
-const calculateArbitrage = (startAmount: number, legs: ArbitragePath['legs']): number => {
-    let currentAmount = startAmount;
-
-    // Leg 1
-    if (legs[0].symbol.startsWith(legs[0].symbol.split('/')[1])) { // e.g., USDT in BTC/USDT -> a/b
-        currentAmount = (currentAmount / legs[0].ask) * (1 - TRADING_FEE);
-    } else { // e.g., USDC in USDC/USDT -> b/a
-        currentAmount = (currentAmount * legs[0].bid) * (1 - TRADING_FEE);
-    }
-
-    // Leg 2
-    if (legs[1].symbol.startsWith(legs[1].symbol.split('/')[1])) { // a/b
-        currentAmount = (currentAmount / legs[1].ask) * (1 - TRADING_FEE);
-    } else {
-        currentAmount = (currentAmount * legs[1].bid) * (1 - TRADING_FEE);
-    }
-    
-    // Leg 3
-     if (legs[2].symbol.startsWith(legs[2].symbol.split('/')[1])) { // a/b
-        currentAmount = (currentAmount / legs[2].ask) * (1 - TRADING_FEE);
-    } else {
-        currentAmount = (currentAmount * legs[2].bid) * (1 - TRADING_FEE);
-    }
-
-    return currentAmount;
-};
-
-
-export function useArbitrageScanner() {
+export function useArbitrageScanner(tradingFee: number) {
   const [paths, setPaths] = useState<ArbitragePath[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [alert, setAlert] = useState<{ id: string; message: string } | null>(
     null
   );
 
-  const calculateProfit = useCallback((path: ArbitragePath): number => {
+  const calculateProfit = useCallback((path: ArbitragePath, fee: number): number => {
     const startAmount = 1000;
     let finalAmount = 0;
   
@@ -119,15 +88,15 @@ export function useArbitrageScanner() {
     const getTrade = (amount: number, pair: {symbol: string, bid: number, ask: number}, from: string, to: string) => {
         const [base, quote] = pair.symbol.split('/');
         if (from === quote && to === base) { // Buy base with quote
-            return (amount / pair.ask) * (1 - TRADING_FEE);
+            return (amount / pair.ask) * (1 - fee);
         }
         if (from === base && to === quote) { // Sell base for quote
-            return (amount * pair.bid) * (1 - TRADING_FEE);
+            return (amount * pair.bid) * (1 - fee);
         }
         // This case handles pairs like USDC/USDT where you might "buy" USDT with USDC.
         // It's a reverse of the typical base/quote logic.
         if (from === base && to === quote) {
-             return (amount / pair.bid) * (1 - TRADING_FEE);
+             return (amount / pair.bid) * (1 - fee);
         }
        return 0;
     }
@@ -141,18 +110,18 @@ export function useArbitrageScanner() {
         const [base, quote] = leg.symbol.split('/');
 
         if (currentAsset === quote && nextAsset === base) { // Buy base with quote: e.g. USDT -> BTC with BTC/USDT
-            currentAmount = (currentAmount / leg.ask) * (1 - TRADING_FEE);
+            currentAmount = (currentAmount / leg.ask) * (1 - fee);
         } else if (currentAsset === base && nextAsset === quote) { // Sell base for quote: e.g. BTC -> USDT with BTC/USDT
-            currentAmount = (currentAmount * leg.bid) * (1 - TRADING_FEE);
+            currentAmount = (currentAmount * leg.bid) * (1 - fee);
         } else if (currentAsset === base && nextAsset === path.path[0]) { // Final leg back to start asset
-             currentAmount = (currentAmount * leg.bid) * (1 - TRADING_FEE);
+             currentAmount = (currentAmount * leg.bid) * (1 - fee);
         } else {
             // This handles cases where the path doesn't perfectly match the pair order,
             // e.g., path is A->B but pair is B/A. We need to invert the price.
              if (currentAsset === base) {
-                 currentAmount = (currentAmount * leg.bid) * (1 - TRADING_FEE);
+                 currentAmount = (currentAmount * leg.bid) * (1 - fee);
              } else {
-                 currentAmount = (currentAmount / leg.ask) * (1 - TRADING_FEE);
+                 currentAmount = (currentAmount / leg.ask) * (1 - fee);
              }
         }
        currentAsset = nextAsset;
@@ -185,7 +154,7 @@ export function useArbitrageScanner() {
       profitablePathIteration++;
       if (profitablePathIteration > 5 && profitablePathIteration < 10) {
         // Make USDT->BTC->USDC->USDT profitable
-        prices["BTC/USDC"].bid = prices["BTC/USDT"].ask * 1.008; // Increased from 1.005 to overcome 0.3% fees
+        prices["BTC/USDC"].bid = prices["BTC/USDT"].ask * (1 + tradingFee * 3 + 0.005);
       } else {
         prices["BTC/USDC"].bid = initialPrices["BTC/USDC"].bid;
       }
@@ -197,7 +166,7 @@ export function useArbitrageScanner() {
           ...(prices[pairSymbol] || { bid: 0, ask: 0 }),
         }));
         const newPath = { ...p, legs, profit: 0, lastUpdated: Date.now() };
-        newPath.profit = calculateProfit(newPath);
+        newPath.profit = calculateProfit(newPath, tradingFee);
         return newPath;
       });
 
@@ -226,7 +195,7 @@ export function useArbitrageScanner() {
     }, 2500);
 
     return () => clearInterval(interval);
-  }, [calculateProfit, isLoading]);
+  }, [calculateProfit, isLoading, tradingFee]);
 
   return { paths, isLoading, alert };
 }
