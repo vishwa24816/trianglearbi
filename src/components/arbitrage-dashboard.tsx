@@ -21,6 +21,8 @@ const tradingFeeOptions = [
   { label: "0.2%", value: 0.002 },
   { label: "0.1%", value: 0.001 },
   { label: "0.08%", value: 0.0008 },
+  { label: "0.05%", value: 0.0005 },
+  { label: "0.025%", value: 0.00025 },
 ];
 
 export function ArbitrageDashboard() {
