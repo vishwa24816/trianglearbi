@@ -119,8 +119,8 @@ export function ArbitrageTable({ data }: { data: ArbitragePath[] }) {
                     <TableCell className="w-12">
                       <AccordionTrigger className="p-0 w-full justify-center [&>svg]:ml-2" />
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 font-medium">
+                    <TableCell className="max-w-xs">
+                      <div className="flex flex-wrap items-center gap-2 font-medium">
                         {path.path[0]}
                         <ArrowRight className="h-4 w-4 text-muted-foreground" />
                         {path.path[1]}
